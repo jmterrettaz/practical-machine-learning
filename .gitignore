@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+Course-Project_cache/
+predtest.txt
+pml-training.csv
+pml-testing.csv

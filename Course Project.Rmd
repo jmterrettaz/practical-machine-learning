@@ -1,0 +1,82 @@
+---
+title: "Course Project"
+author: "Jean-Marc Terrettaz"
+date: "7/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
+
+## Data preparation
+
+Load needed libraries and training and testing data sets:
+```{r}
+library(caret)
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+```
+
+Remove colums with NAs:
+
+```{r}
+hasNA <- sapply(training, anyNA)
+
+training <- training[, !hasNA]
+testing <- testing[, !hasNA]
+```
+
+Remove columns with near zero variance: 
+```{r}
+nzv <- nearZeroVar(training)
+training <- training[, -nzv]
+testing <- testing[, -nzv]
+```
+
+Remove variables which do not contains measurements (the first seven columns):
+```{r}
+training <- training[,-(1:7)]
+testing <- testing[,-(1:7)]
+```
+
+Now we separate the training data in a training an validation set: 
+```{r}
+trainPart <- createDataPartition(y=training$classe, p=0.7, list=F)
+training1 <- training[trainPart, ]
+training2 <- training[-trainPart, ]
+```
+
+
+## Fit the model
+
+We use a random forest model and 3-fold cross validation:
+```{r}
+modControl <- trainControl(method="cv", number=3, verboseIter=T)
+modFit <- train(classe~., method="rf", data=training1, trControl=modControl)
+```
+
+## Validate the model
+
+Now we predict the model against the validation set and estimate its accuracy with the confusion matrix:
+```{r}
+pred2 <- predict(modFit, newdata=training2)
+confusionMatrix(training2$classe, pred2)
+```
+So the model has an accuracy of over 99% which is quite good. So we will use this model against the test data set. 
+
+## Prediction of the test set
+
+Now we can predict on the test set and write the result to a file.
+```{r}
+predtest <- predict(modFit, newdata=testing)
+write.table(predtest, file="predtest.txt", quote=TRUE)
+```
+
+
